@@ -1,3 +1,7 @@
+## Preview
+
+![Bellgu Search Preview](Screenshot 2026-06-16 180038.png)
+
 # Bellgu-Search
 Bellgu Search is an experimental web-based search launcher and personal dashboard built as a UI playground.
 
