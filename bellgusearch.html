@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bellgu Search</title>
+    <style>
+        /* Biến CSS để làm giao diện Sáng / Tối */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #202124;
+            --text-sub: #5f6368;
+            --border-color: #dfe1e5;
+            --footer-bg: #f2f2f2;
+            --footer-border: #e4e4e4;
+            --card-hover: #f1f3f4;
+            --btn-bg: #f8f9fa;
+            --accent-color: #1a73e8;
+            --overlay-bg: rgba(255, 255, 255, 0.9);
+            --search-bg: #ffffff;
+        }
+
+        body.dark-mode {
+            --bg-color: #202124;
+            --text-color: #e8eaed;
+            --text-sub: #9aa0a6;
+            --border-color: #3c4043;
+            --footer-bg: #171717;
+            --footer-border: #202124;
+            --card-hover: #303134;
+            --btn-bg: #303134;
+            --accent-color: #8ab4f8;
+            --overlay-bg: rgba(32, 33, 36, 0.85);
+            --search-bg: #303134;
+        }
+
+        /* Giao diện khi bật Chế độ riêng tư */
+        body.incognito-mode {
+            --bg-color: #2b2b2b;
+            --text-color: #f1f1f1;
+            --text-sub: #b1b1b1;
+            --border-color: #444444;
+            --footer-bg: #1e1e1e;
+            --footer-border: #2b2b2b;
+            --card-hover: #444444;
+            --btn-bg: #3c4043;
+            --accent-color: #9aa0a6;
+            --search-bg: #3c4043;
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s, background-image 0.3s;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            position: relative;
+        }
+
+        body.has-background::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--overlay-bg);
+            z-index: 0;
+        }
+
+        /* Thanh tiện ích trên cùng */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 15px 25px;
+            font-size: 14px;
+            z-index: 10;
+        }
+
+        .left-widgets, .right-widgets {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .widget-clock {
+            font-weight: bold;
+            color: var(--text-sub);
+        }
+
+        .settings-wrapper, .google-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .top-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            color: var(--text-color);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .top-btn:hover {
+            background-color: var(--card-hover);
+        }
+
+        /* Menu thả xuống */
+        .dropdown-menu-box {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            display: none !important;
+            flex-direction: column;
+            min-width: 260px;
+            z-index: 100;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .dropdown-menu-box.show {
+            display: flex !important;
+        }
+
+        .dropdown-menu-box button, .dropdown-menu-box .menu-item-link, .dropdown-menu-box label {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            padding: 11px 16px;
+            text-align: left;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-menu-box label {
+            cursor: default;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background-color: rgba(0,0,0,0.02);
+        }
+        
+        .dropdown-menu-box select {
+            width: 100%;
+            padding: 4px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .dropdown-menu-box button:last-child, .dropdown-menu-box .menu-item-link:last-child, .dropdown-menu-box label:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-menu-box button:hover, .dropdown-menu-box .menu-item-link:hover {
+            background-color: var(--card-hover);
+        }
+
+        /* Khối import/export nằm cạnh nhau */
+        .config-io-group {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .config-io-group button, .config-io-group label {
+            flex: 1;
+            text-align: center;
+            padding: 11px 5px;
+            font-size: 13px;
+            border-bottom: none;
+        }
+        .config-io-group button:first-child {
+            border-right: 1px solid var(--border-color);
+        }
+
+        /* Wrapper chính */
+        .wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 4vh 20px 40px 20px;
+            width: 100%;
+            z-index: 5;
+        }
+
+        .greeting-container {
+            font-size: 16px;
+            color: var(--text-sub);
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .username-text {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            color: #4285F4;
+            margin: 0 0 10px 0;
+            text-align: center;
+        }
+
+        body.incognito-mode h1 {
+            color: #f1f1f1;
+        }
+
+        .auto-delete-status {
+            font-size: 13px;
+            color: #ea4335;
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .search-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        form {
+            width: 100%;
+            max-width: 580px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 95px 14px 20px;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            outline: none;
+            background-color: var(--search-bg);
+            color: var(--text-color);
+        }
+
+        input[type="text"]:focus {
+            box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+        }
+
+        .search-actions-group {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .search-action-btn {
+            background: none;
+            border: none;
+            text-decoration: none;
+            font-size: 17px;
+            padding: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: var(--text-color);
+        }
+
+        .search-action-btn:hover {
+            background-color: var(--card-hover);
+        }
+
+        /* Menu lịch sử thả xuống */
+        .history-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            padding: 10px;
+            margin-top: 5px;
+        }
+
+        .history-dropdown.show {
+            display: block;
+        }
+
+        /* Suggestions List */
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 24px 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: 240px;
+            overflow-y: auto;
+            z-index: 999;
+            display: none;
+            text-align: left;
+        }
+
+        .suggestion-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .suggestion-item:hover {
+            background-color: var(--card-hover);
+        }
+
+        .form-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        input[type="submit"], .lucky-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            background-color: var(--btn-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        input[type="submit"]:hover, .lucky-btn:hover {
+            background-color: var(--card-hover);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Bố cục lối tắt */
+        .columns-layout {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .column-left {
+            width: 100%;
+            max-width: 580px;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 120px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: var(--text-sub);
+            margin: 0 0 15px 0;
+            font-weight: bold;
+            width: 100%;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+            gap: 12px;
+            width: 100%;
+        }
+
+        .service-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-color);
+            padding: 8px;
+            border-radius: 6px;
+            position: relative;
+            text-align: center;
+        }
+
+        .service-item:hover {
+            background-color: var(--card-hover);
+        }
+
+        .service-icon {
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        .service-name {
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        /* Lịch sử */
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 5px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .history-text {
+            cursor: pointer;
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .history-text:hover {
+            color: #1a73e8;
+            text-decoration: underline;
+        }
+
+        .delete-item {
+            color: var(--text-sub);
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .delete-item:hover {
+            color: #ea4335;
+        }
+
+        .history-header-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 5px;
+        }
+
+        #clearHistoryBtn {
+            background: none;
+            border: none;
+            color: #ea4335;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* Giao diện Modal Quản lý lối tắt */
+        .modal-overlay {
+            position: fixed;
+            top:0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        
+        .modal-box {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 450px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .modal-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .shortcut-manage-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+        .shortcut-manage-actions button {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 4px;
+            color: var(--text-color);
+        }
+        .shortcut-manage-actions .btn-del { color: #ea4335; }
+        .modal-close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--text-sub);
+        }
+        .modal-add-form {
+            margin-top: 15px;
+            background: rgba(0,0,0,0.02);
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px dashed var(--border-color);
+        }
+        .modal-add-form input {
+            width: 100%;
+            padding: 6px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        /* Footer */
+        footer {
+            width: 100%;
+            background-color: var(--footer-bg);
+            border-top: 1px solid var(--footer-border);
+            padding: 15px 25px;
+            color: var(--text-sub);
+            font-size: 13px;
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .footer-links-left, .footer-links-right {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        footer a {
+            color: var(--text-sub);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            footer {
+                flex-direction: column;
+                text-align: center;
+            }
+            .footer-links-left, .footer-links-right {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="left-widgets">
+            <div class="widget-clock" id="widgetClock">00:00:00</div>
+        </div>
+        <div class="right-widgets">
+            <div class="google-wrapper">
+                <button class="top-btn" id="googleTriggerBtn" data-vi="📱 Dịch vụ Google" data-en="📱 Google Services">📱 Dịch vụ Google</button>
+                <div class="dropdown-menu-box" id="googleDropdownMenu">
+                    <a href="https://mail.google.com" target="_blank" class="menu-item-link">📧 Gmail</a>
+                    <a href="https://www.youtube.com" target="_blank" class="menu-item-link">📺 YouTube</a>
+                    <a href="https://maps.google.com" target="_blank" class="menu-item-link">🗺️ Maps</a>
+                    <a href="https://drive.google.com" target="_blank" class="menu-item-link">💾 Drive</a>
+                    <a href="https://translate.google.com" target="_blank" class="menu-item-link" data-vi="🌐 Dịch thuật" data-en="🌐 Translate">🌐 Dịch thuật</a>
+                </div>
+            </div>
+
+            <div class="settings-wrapper">
+                <button class="top-btn" id="settingsBtn" data-vi="⚙️ Cài đặt" data-en="⚙️ Settings">⚙️ Cài đặt</button>
+                <div class="dropdown-menu-box" id="settingsMenu">
+                    <button id="langToggleBtn">🌐 Tiếng Việt</button>
+                    <button id="incognitoToggleBtn" data-vi="🕵️‍♂️ Riêng tư: TẮT" data-en="🕵️‍♂️ Incognito: OFF">🕵️‍♂️ Riêng tư: TẮT</button>
+                    <button id="themeToggleBtn" data-vi="🌙 Chế độ tối" data-en="🌙 Dark Mode">🌙 Chế độ tối</button>
+                    
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0;">
+                    
+                    <button id="setNavNameBtn" data-vi="👤 Đổi tên hiển thị" data-en="👤 Change Display Name">👤 Đổi tên hiển thị</button>
+                    <button id="setNavBgBtn" data-vi="🖼️ Thay hình nền" data-en="🖼️ Change Background">🖼️ Thay hình nền</button>
+                    <button id="setQuickBtn" data-vi="🔗 Đổi nút truy cập nhanh" data-en="🔗 Edit Quick Access">🔗 Đổi nút truy cập nhanh</button>
+                    <button id="openManageShortcutsBtn" data-vi="✏️ Chỉnh sửa lối tắt" data-en="✏️ Manage Shortcuts">✏️ Chỉnh sửa lối tắt</button>
+                    <button id="autoDeleteToggleBtn">⏱️ Tự động xóa lịch sử: TẮT</button>
+                    
+                    <label>
+                        <span id="labelEngineText" data-vi="🔍 Công cụ tìm kiếm:" data-en="🔍 Search Engine:">🔍 Công cụ tìm kiếm:</span>
+                        <select id="engineSelect">
+                            <option value="google">Google</option>
+                            <option value="coccoc">Cốc Cốc</option>
+                            <option value="bing">Bing</option>
+                            <option value="duckduckgo">DuckDuckGo</option>
+                            <option value="brave">Brave</option>
+                            <option value="yahoo">Yahoo</option>
+                            <option value="yandex">Yandex</option>
+                            <option value="naver">Naver</option>
+                            <option value="baidu">Baidu</option>
+                        </select>
+                    </label>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0;">
+                    
+                    <div class="config-io-group">
+                        <button type="button" id="exportConfigBtn" data-vi="📤 Xuất File" data-en="📤 Export File">📤 Xuất File</button>
+                        <label style="cursor:pointer; display:flex; align-items:center; justify-content:center; background:none; font-weight:normal;">
+                            <span data-vi="📥 Nhập File" data-en="📥 Import File">📥 Nhập File</span>
+                            <input type="file" id="importConfigFile" accept=".json" style="display:none;">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="wrapper">
+        <div class="greeting-container">
+            <span id="greetingText">Xin chào</span>, <span id="usernameDisplay" class="username-text">user</span>!
+        </div>
+        <h1 id="mainLogo">Bellgu Search</h1>
+
+        <div id="autoDeleteStatus" class="auto-delete-status">⏱️ Tự động xóa sau: 30:00</div>
+
+        <div class="search-container">
+            <form id="searchForm" action="https://www.google.com/search" method="get">
+                <div class="input-wrapper">
+                    <input type="text" id="searchInput" name="q" placeholder="Tìm kiếm..." required autocomplete="off">
+                    
+                    <div class="search-actions-group">
+                        <button type="button" id="historyToggleBtn" class="search-action-btn" title="Xem lịch sử tìm kiếm">📜</button>
+                        <a id="quickAccessLink" href="https://vi.wikipedia.org" target="_blank" class="search-action-btn" title="Truy cập nhanh">🌐</a>
+                    </div>
+
+                    <div id="historyDropdown" class="history-dropdown">
+                        <div class="history-header-box">
+                            <span id="historyTitle" style="font-size: 12px; font-weight: bold;" data-vi="Lịch sử tìm kiếm" data-en="Search History">Lịch sử tìm kiếm</span>
+                            <button type="button" id="clearHistoryBtn" data-vi="Xóa sạch" data-en="Clear All">Xóa sạch</button>
+                        </div>
+                        <ul id="historyList" class="history-list"></ul>
+                    </div>
+
+                    <div id="suggestions" class="suggestions-list"></div>
+                </div>
+                
+                <div class="form-buttons">
+                    <input type="submit" id="searchSubmitBtn" value="Tìm kiếm">
+                    <a href="https://doodles.google/" target="_blank" class="lucky-btn" id="luckyBtn" data-vi="Xem Google Doodles" data-en="I'm Feeling Lucky">Xem Google Doodles</a>
+                </div>
+            </form>
+
+            <div class="columns-layout">
+                <div class="column-left">
+                    <h4 class="section-title" id="shortcutsTitle" data-vi="Lối tắt của bạn" data-en="Your Shortcuts">Lối tắt của bạn</h4>
+                    <div class="services-grid" id="bookmarksGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="shortcutModal">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span data-vi="Quản lý lối tắt" data-en="Manage Shortcuts">Quản lý lối tắt</span>
+                <button class="modal-close-btn" id="closeShortcutModalBtn">✕</button>
+            </div>
+            
+            <div id="shortcutManageList"></div>
+
+            <div class="modal-add-form">
+                <div style="font-weight:bold; font-size:13px; margin-bottom:8px;" data-vi="Thêm lối tắt mới" data-en="Add New Shortcut">Thêm lối tắt mới</div>
+                <input type="text" id="addShortcutName" placeholder="Tên trang (Ví dụ: Facebook)" data-vi="Tên trang (Ví dụ: Facebook)" data-en="Site Name (e.g. Facebook)">
+                <input type="text" id="addShortcutUrl" placeholder="URL trang (Ví dụ: facebook.com)" data-vi="URL trang (Ví dụ: facebook.com)" data-en="Site URL (e.g. facebook.com)">
+                <button type="button" style="width:100%; padding:8px; cursor:pointer; background:var(--accent-color); color:#fff; border:none; border-radius:4px;" id="addShortcutSubmitBtn" data-vi="Thêm" data-en="Add">Thêm</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-links-left">
+            <a href="about.html" id="footAbout" data-vi="Giới thiệu" data-en="About">Giới thiệu</a>
+            <a href="https://ads.google.com" target="_blank" id="footAds" data-vi="Quảng cáo" data-en="Advertising">Quảng cáo</a>
+            <a href="https://www.google.com/services/" target="_blank" id="footBiz" data-vi="Doanh nghiệp" data-en="Business">Doanh nghiệp</a>
+            <a href="howsearchworks.html" id="footHow" data-vi="Cách hoạt động của Tìm kiếm" data-en="How Search Works">Cách hoạt động của Tìm kiếm</a>
+        </div>
+        <div class="footer-links-right">
+            <a href="privacy.html" id="footPrivacy" data-vi="Bảo mật" data-en="Privacy">Bảo mật</a>
+            <a href="terms.html" id="footTerms" data-vi="Điều khoản" data-en="Terms">Điều khoản</a>
+        </div>
+    </footer>
+
+    <script>
+        const searchEngines = {
+            google: { name: 'Google', action: 'https://www.google.com/search', queryParam: 'q' },
+            coccoc: { name: 'Cốc Cốc', action: 'https://coccoc.com/search', queryParam: 'q' },
+            bing: { name: 'Bing', action: 'https://www.bing.com/search', queryParam: 'q' },
+            duckduckgo: { name: 'DuckDuckGo', action: 'https://duckduckgo.com/', queryParam: 'q' },
+            brave: { name: 'Brave', action: 'https://search.brave.com/search', queryParam: 'q' },
+            yahoo: { name: 'Yahoo', action: 'https://search.yahoo.com/search', queryParam: 'p' },
+            yandex: { name: 'Yandex', action: 'https://yandex.com/search/', queryParam: 'text' },
+            naver: { name: 'Naver', action: 'https://search.naver.com/search.naver', queryParam: 'query' },
+            baidu: { name: 'Baidu', action: 'https://www.baidu.com/s', queryParam: 'wd' }
+        };
+
+        const body = document.body;
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const incognitoToggleBtn = document.getElementById('incognitoToggleBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsMenu = document.getElementById('settingsMenu');
+        const engineSelect = document.getElementById('engineSelect');
+        const searchSubmitBtn = document.getElementById('searchSubmitBtn');
+        const langToggleBtn = document.getElementById('langToggleBtn');
+        const autoDeleteToggleBtn = document.getElementById('autoDeleteToggleBtn');
+        const autoDeleteStatus = document.getElementById('autoDeleteStatus');
+        
+        const setNavNameBtn = document.getElementById('setNavNameBtn');
+        const setNavBgBtn = document.getElementById('setNavBgBtn');
+        const setQuickBtn = document.getElementById('setQuickBtn');
+        const openManageShortcutsBtn = document.getElementById('openManageShortcutsBtn');
+
+        const exportConfigBtn = document.getElementById('exportConfigBtn');
+        const importConfigFile = document.getElementById('importConfigFile');
+
+        const widgetClock = document.getElementById('widgetClock');
+        const greetingText = document.getElementById('greetingText');
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchInput');
+        const quickAccessLink = document.getElementById('quickAccessLink');
+        const historyToggleBtn = document.getElementById('historyToggleBtn');
+        const historyDropdown = document.getElementById('historyDropdown');
+        const suggestions = document.getElementById('suggestions');
+        const bookmarksGrid = document.getElementById('bookmarksGrid');
+        const historyList = document.getElementById('historyList');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const googleTriggerBtn = document.getElementById('googleTriggerBtn');
+        const googleDropdownMenu = document.getElementById('googleDropdownMenu');
+
+        const shortcutModal = document.getElementById('shortcutModal');
+        const closeShortcutModalBtn = document.getElementById('closeShortcutModalBtn');
+        const shortcutManageList = document.getElementById('shortcutManageList');
+        const addShortcutName = document.getElementById('addShortcutName');
+        const addShortcutUrl = document.getElementById('addShortcutUrl');
+        const addShortcutSubmitBtn = document.getElementById('addShortcutSubmitBtn');
+
+        let searchHistory = JSON.parse(localStorage.getItem('bellgu_history')) || [];
+        let customBookmarks = JSON.parse(localStorage.getItem('bellgu_bookmarks')) || [
+            { name: 'Facebook', url: 'https://facebook.com', icon: '🔵' },
+            { name: 'GitHub', url: 'https://github.com', icon: '🐙' }
+        ];
+        let username = localStorage.getItem('bellgu_username') || 'user';
+        let isIncognito = false;
+        let currentLang = localStorage.getItem('bellgu_lang') || 'vi';
+        
+        let isAutoDelete = localStorage.getItem('bellgu_auto_delete') === 'true';
+        let autoDeleteMinutes = parseInt(localStorage.getItem('bellgu_auto_delete_mins')) || 30;
+        let autoDeleteTimeLeft = autoDeleteMinutes * 60; 
+        let autoDeleteTimerInterval = null;
+
+        let quickAccessData = JSON.parse(localStorage.getItem('bellgu_quickaccess')) || {
+            name: 'Wikipedia',
+            url: 'https://vi.wikipedia.org',
+            icon: '🌐'
+        };
+
+        // --- ĐỘNG NGÔN NGỮ & ĐỘNG TRẠNG THÁI HIỂN THỊ ---
+        function applyLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('bellgu_lang', lang);
+            langToggleBtn.textContent = lang === 'vi' ? '🌐 Tiếng Việt' : '🌐 English';
+
+            document.querySelectorAll('[data-vi]').forEach(el => {
+                el.textContent = el.getAttribute(`data-${lang}`);
+            });
+            document.querySelectorAll('input[data-vi]').forEach(el => {
+                el.placeholder = el.getAttribute(`data-${lang}`);
+            });
+
+            updateSearchEngineUI();
+
+            const isDark = body.classList.contains('dark-mode');
+            themeToggleBtn.textContent = isDark 
+                ? (lang === 'vi' ? '☀️ Chế độ sáng' : '☀️ Light Mode') 
+                : (lang === 'vi' ? '🌙 Chế độ tối' : '🌙 Dark Mode');
+
+            incognitoToggleBtn.textContent = isIncognito
+                ? (lang === 'vi' ? '🕵️‍♂️ Riêng tư: BẬT' : '🕵️‍♂️ Incognito: ON')
+                : (lang === 'vi' ? '🕵️‍♂️ Riêng tư: TẮT' : '🕵️‍♂️ Incognito: OFF');
+
+            updateTimeAndGreeting();
+            updateAutoDeleteUI();
+            renderBookmarks();
+        }
+
+        function updateSearchEngineUI() {
+            const currentEngineKey = localStorage.getItem('bellgu_search_engine') || 'google';
+            const engineName = searchEngines[currentEngineKey].name;
+            
+            searchSubmitBtn.value = currentLang === 'vi' ? `Tìm kiếm trên ${engineName}` : `Search on ${engineName}`;
+            
+            if (isIncognito) {
+                searchInput.placeholder = currentLang === 'vi' ? 'Đang tìm kiếm riêng tư...' : 'Searching incognito...';
+            } else {
+                searchInput.placeholder = currentLang === 'vi' ? `Tìm kiếm trên ${engineName}...` : `Search on ${engineName}...`;
+            }
+        }
+
+        langToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            applyLanguage(currentLang === 'vi' ? 'en' : 'vi');
+        });
+
+        function applySearchEngine(engineKey) {
+            const config = searchEngines[engineKey] || searchEngines.google;
+            searchForm.action = config.action;
+            searchInput.name = config.queryParam;
+            engineSelect.value = engineKey;
+            localStorage.setItem('bellgu_search_engine', engineKey);
+            updateSearchEngineUI();
+        }
+
+        engineSelect.addEventListener('change', (e) => {
+            applySearchEngine(e.target.value);
+        });
+
+        // --- ĐẾM NGƯỢC XÓA LỊCH SỬ ---
+        function updateAutoDeleteUI() {
+            if (isAutoDelete) {
+                autoDeleteToggleBtn.textContent = currentLang === 'vi' 
+                    ? `⏱️ Tự động xóa lịch sử: BẬT (${autoDeleteMinutes}m)` 
+                    : `⏱️ Auto Delete History: ON (${autoDeleteMinutes}m)`;
+                autoDeleteStatus.style.display = 'block';
+            } else {
+                autoDeleteToggleBtn.textContent = currentLang === 'vi' ? '⏱️ Tự động xóa lịch sử: TẮT' : '⏱️ Auto Delete History: OFF';
+                autoDeleteStatus.style.display = 'none';
+            }
+        }
+
+        function formatTimeDisplay() {
+            let mins = Math.floor(autoDeleteTimeLeft / 60);
+            let secs = autoDeleteTimeLeft % 60;
+            let displayMins = mins < 10 ? '0' + mins : mins;
+            let displaySecs = secs < 10 ? '0' + secs : secs;
+            autoDeleteStatus.textContent = currentLang === 'vi' 
+                ? `⏱️ Tự động xóa sau: ${displayMins}:${displaySecs}` 
+                : `⏱️ Auto delete in: ${displayMins}:${displaySecs}`;
+        }
+
+        function startAutoDeleteTimer() {
+            if (autoDeleteTimerInterval) clearInterval(autoDeleteTimerInterval);
+            formatTimeDisplay();
+            autoDeleteTimerInterval = setInterval(() => {
+                if (!isAutoDelete) {
+                    clearInterval(autoDeleteTimerInterval);
+                    return;
+                }
+                autoDeleteTimeLeft--;
+                formatTimeDisplay();
+                if (autoDeleteTimeLeft <= 0) {
+                    searchHistory = [];
+                    localStorage.removeItem('bellgu_history');
+                    renderHistory();
+                    autoDeleteTimeLeft = autoDeleteMinutes * 60; 
+                }
+            }, 1000);
+        }
+
+        autoDeleteToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isAutoDelete = !isAutoDelete;
+            if (isAutoDelete) {
+                const promptMsg = currentLang === 'vi' ? 'Nhập thời gian tự động xóa lịch sử (đơn vị: phút):' : 'Enter history auto-delete interval (in minutes):';
+                let inputMins = prompt(promptMsg, autoDeleteMinutes);
+                if (inputMins !== null && !isNaN(inputMins) && parseInt(inputMins) > 0) {
+                    autoDeleteMinutes = parseInt(inputMins);
+                } else {
+                    autoDeleteMinutes = 30;
+                }
+                localStorage.setItem('bellgu_auto_delete_mins', autoDeleteMinutes);
+                autoDeleteTimeLeft = autoDeleteMinutes * 60; 
+                localStorage.setItem('bellgu_auto_delete', 'true');
+                updateAutoDeleteUI();
+                startAutoDeleteTimer();
+            } else {
+                localStorage.setItem('bellgu_auto_delete', 'false');
+                if (autoDeleteTimerInterval) clearInterval(autoDeleteTimerInterval);
+                updateAutoDeleteUI();
+            }
+        });
+
+        if (isAutoDelete) startAutoDeleteTimer();
+
+        // --- CHẾ ĐỘ RIÊNG TƯ ---
+        incognitoToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isIncognito = !isIncognito;
+            if (isIncognito) {
+                body.classList.add('incognito-mode');
+                incognitoToggleBtn.textContent = currentLang === 'vi' ? '🕵️‍♂️ Riêng tư: BẬT' : '🕵️‍♂️ Incognito: ON';
+                incognitoToggleBtn.classList.add('active');
+            } else {
+                body.classList.remove('incognito-mode');
+                incognitoToggleBtn.textContent = currentLang === 'vi' ? '🕵️‍♂️ Riêng tư: TẮT' : '🕵️‍♂️ Incognito: OFF';
+                incognitoToggleBtn.classList.remove('active');
+            }
+            updateSearchEngineUI();
+        });
+
+        // --- GIAO DIỆN NỀN & THỜI GIAN ---
+        if (localStorage.getItem('bellgu_theme') === 'dark') body.classList.add('dark-mode');
+        themeToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('bellgu_theme', isDark ? 'dark' : 'light');
+            themeToggleBtn.textContent = isDark ? (currentLang === 'vi' ? '☀️ Chế độ sáng' : '☀️ Light Mode') : (currentLang === 'vi' ? '🌙 Chế độ tối' : '🌙 Dark Mode');
+        });
+
+        function applyBackground(bgUrl) {
+            if (bgUrl && bgUrl.trim() !== '') {
+                body.style.backgroundImage = `url('${bgUrl.trim()}')`;
+                body.classList.add('has-background');
+                localStorage.setItem('bellgu_bgurl', bgUrl.trim());
+            } else {
+                body.style.backgroundImage = 'none';
+                body.classList.remove('has-background');
+                localStorage.removeItem('bellgu_bgurl');
+            }
+        }
+        applyBackground(localStorage.getItem('bellgu_bgurl'));
+
+        // --- SỰ KIỆN ĐÓNG MỞ DROP-DOWN ---
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsMenu.classList.toggle('show');
+            googleDropdownMenu.classList.remove('show');
+            historyDropdown.classList.remove('show');
+        });
+        googleTriggerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            googleDropdownMenu.classList.toggle('show');
+            settingsMenu.classList.remove('show');
+            historyDropdown.classList.remove('show');
+        });
+        historyToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            historyDropdown.classList.toggle('show');
+            settingsMenu.classList.remove('show');
+            googleDropdownMenu.classList.remove('show');
+            renderHistory();
+        });
+        document.addEventListener('click', (e) => {
+            if (!settingsMenu.contains(e.target) && e.target !== settingsBtn) settingsMenu.classList.remove('show');
+            if (!googleDropdownMenu.contains(e.target) && e.target !== googleTriggerBtn) googleDropdownMenu.classList.remove('show');
+            if (!historyDropdown.contains(e.target) && e.target !== historyToggleBtn) historyDropdown.classList.remove('show');
+        });
+
+        engineSelect.addEventListener('click', (e) => e.stopPropagation());
+
+        // --- CẤU HÌNH CÁC CHỨC NĂNG CÀI ĐẶT CƠ BẢN ---
+        setNavNameBtn.addEventListener('click', () => {
+            const promptMsg = currentLang === 'vi' ? 'Nhập tên hiển thị mới của bạn:' : 'Enter your new display name:';
+            const newName = prompt(promptMsg, username);
+            if (newName && newName.trim()) {
+                username = newName.trim();
+                localStorage.setItem('bellgu_username', username);
+                updateTimeAndGreeting();
+            }
+        });
+
+        setNavBgBtn.addEventListener('click', () => {
+            const currentBg = localStorage.getItem('bellgu_bgurl') || '';
+            const promptMsg = currentLang === 'vi' ? 'Nhập hoặc dán link URL hình ảnh bạn thích làm nền:\n(Để trống nếu muốn quay lại nền mặc định)' : 'Enter or paste image URL link for background:\n(Leave empty to reset to default)';
+            const customUrl = prompt(promptMsg, currentBg);
+            if (customUrl !== null) applyBackground(customUrl);
+        });
+
+        setQuickBtn.addEventListener('click', () => {
+            const nameMsg = currentLang === 'vi' ? 'Nhập tên dịch vụ:' : 'Enter service name:';
+            const urlMsg = currentLang === 'vi' ? 'Nhập địa chỉ URL trang web:' : 'Enter website URL address:';
+            const iconMsg = currentLang === 'vi' ? 'Nhập một emoji làm icon đại diện:' : 'Enter an emoji for representation icon:';
+            const newName = prompt(nameMsg, quickAccessData.name);
+            if (!newName) return;
+            let newUrl = prompt(urlMsg, quickAccessData.url);
+            if (!newUrl) return;
+            if (!newUrl.startsWith('http://') && !newUrl.startsWith('https://')) newUrl = 'https://' + newUrl;
+            const newIcon = prompt(iconMsg, quickAccessData.icon) || '🌐';
+            quickAccessData = { name: newName, url: newUrl, icon: newIcon };
+            localStorage.setItem('bellgu_quickaccess', JSON.stringify(quickAccessData));
+            applyQuickAccessLink();
+        });
+
+        function applyQuickAccessLink() {
+            quickAccessLink.href = quickAccessData.url;
+            quickAccessLink.textContent = quickAccessData.icon;
+            quickAccessLink.title = currentLang === 'vi' ? `Truy cập nhanh ${quickAccessData.name}` : `Quick access to ${quickAccessData.name}`;
+        }
+
+        function updateTimeAndGreeting() {
+            const now = new Date();
+            widgetClock.textContent = now.toLocaleTimeString('vi-VN');
+            const hr = now.getHours();
+            let greet = "";
+            if (currentLang === 'vi') {
+                if (hr >= 5 && hr < 11) greet = "🌅 Chào buổi sáng";
+                else if (hr >= 11 && hr < 14) greet = "☀️ Chào buổi trưa";
+                else if (hr >= 14 && hr < 18) greet = "🌇 Chào buổi chiều";
+                else if (hr >= 18 && hr < 24) greet = "🌌 Chúc buổi tối tốt lành";
+                else greet = "🦉 Cú đêm làm việc chăm chỉ nhé";
+            } else {
+                if (hr >= 5 && hr < 12) greet = "🌅 Good morning";
+                else if (hr >= 12 && hr < 17) greet = "🌇 Good afternoon";
+                else if (hr >= 17 && hr < 24) greet = "🌌 Good evening";
+                else greet = "🦉 Burning the midnight oil";
+            }
+            greetingText.textContent = greet;
+            usernameDisplay.textContent = username;
+        }
+        setInterval(updateTimeAndGreeting, 1000);
+
+        // --- XỬ LÝ NHẬP / XUẤT CẤU HÌNH (IMPORT / EXPORT JSON) ---
+        exportConfigBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const configData = {
+                bellgu_history: localStorage.getItem('bellgu_history'),
+                bellgu_bookmarks: localStorage.getItem('bellgu_bookmarks'),
+                bellgu_username: localStorage.getItem('bellgu_username'),
+                bellgu_lang: localStorage.getItem('bellgu_lang'),
+                bellgu_theme: localStorage.getItem('bellgu_theme'),
+                bellgu_search_engine: localStorage.getItem('bellgu_search_engine'),
+                bellgu_bgurl: localStorage.getItem('bellgu_bgurl'),
+                bellgu_quickaccess: localStorage.getItem('bellgu_quickaccess'),
+                bellgu_auto_delete: localStorage.getItem('bellgu_auto_delete'),
+                bellgu_auto_delete_mins: localStorage.getItem('bellgu_auto_delete_mins')
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(configData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "bellgu_backup_settings.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        });
+
+        importConfigFile.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const parsedData = JSON.parse(evt.target.result);
+                    
+                    // Duyệt từng thuộc tính và nạp ngược lại vào LocalStorage
+                    Object.keys(parsedData).forEach(key => {
+                        if (parsedData[key] !== null && parsedData[key] !== undefined) {
+                            localStorage.setItem(key, parsedData[key]);
+                        }
+                    });
+
+                    alert(currentLang === 'vi' ? '🎉 Nhập cấu hình thành công! Trang web sẽ tải lại.' : '🎉 Settings imported successfully! Reloading...');
+                    window.location.reload();
+                } catch (error) {
+                    alert(currentLang === 'vi' ? '❌ File JSON không đúng định dạng chuẩn!' : '❌ Invalid backup configuration file!');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // --- HIỂN THỊ LỐI TẮT LÊN TRANG CHỦ ---
+        function renderBookmarks() {
+            bookmarksGrid.innerHTML = '';
+            customBookmarks.forEach((bm) => {
+                const a = document.createElement('a');
+                a.href = bm.url;
+                a.target = '_blank';
+                a.className = 'service-item';
+                a.innerHTML = `
+                    <span class="service-icon">${bm.icon || '🔗'}</span>
+                    <span class="service-name">${bm.name}</span>
+                `;
+                bookmarksGrid.appendChild(a);
+            });
+        }
+
+        // --- MODAL QUẢN LÝ LỐI TẮT NÂNG CAO ---
+        openManageShortcutsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsMenu.classList.remove('show');
+            shortcutModal.classList.add('show');
+            renderManageList();
+        });
+
+        closeShortcutModalBtn.addEventListener('click', () => {
+            shortcutModal.classList.remove('show');
+        });
+
+        function renderManageList() {
+            shortcutManageList.innerHTML = '';
+            if (customBookmarks.length === 0) {
+                shortcutManageList.innerHTML = `<div style="color:var(--text-sub); font-size:13px; padding:10px 0;">${currentLang==='vi'?'Chưa có lối tắt nào.':'No shortcuts added.'}</div>`;
+                return;
+            }
+            customBookmarks.forEach((bm, idx) => {
+                const div = document.createElement('div');
+                div.className = 'shortcut-manage-item';
+                div.innerHTML = `
+                    <div style="text-align:left; max-width:65%;">
+                        <div style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${bm.icon} ${bm.name}</div>
+                        <div style="font-size:11px; color:var(--text-sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${bm.url}</div>
+                    </div>
+                    <div class="shortcut-manage-actions">
+                        <button class="btn-edit" data-idx="${idx}">${currentLang==='vi'?'Sửa':'Edit'}</button>
+                        <button class="btn-del" data-idx="${idx}">${currentLang==='vi'?'Xóa':'Del'}</button>
+                    </div>
+                `;
+                shortcutManageList.appendChild(div);
+            });
+
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = btn.getAttribute('data-idx');
+                    const bm = customBookmarks[idx];
+                    const namePrompt = currentLang==='vi'?'Sửa tên lối tắt:':'Edit shortcut name:';
+                    const urlPrompt = currentLang==='vi'?'Sửa URL lối tắt:':'Edit shortcut URL:';
+                    
+                    const newName = prompt(namePrompt, bm.name);
+                    if (!newName || !newName.trim()) return;
+                    let newUrl = prompt(urlPrompt, bm.url);
+                    if (!newUrl || !newUrl.trim()) return;
+                    if (!newUrl.startsWith('http://') && !newUrl.startsWith('https://')) newUrl = 'https://' + newUrl.trim();
+                    
+                    customBookmarks[idx] = { name: newName.trim(), url: newUrl.trim(), icon: bm.icon };
+                    localStorage.setItem('bellgu_bookmarks', JSON.stringify(customBookmarks));
+                    renderManageList();
+                    renderBookmarks();
+                });
+            });
+
+            document.querySelectorAll('.btn-del').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = btn.getAttribute('data-idx');
+                    const confirmMsg = currentLang==='vi'?'Bạn có chắc chắn muốn xóa lối tắt này không?':'Are you sure you want to delete this shortcut?';
+                    if (confirm(confirmMsg)) {
+                        customBookmarks.splice(idx, 1);
+                        localStorage.setItem('bellgu_bookmarks', JSON.stringify(customBookmarks));
+                        renderManageList();
+                        renderBookmarks();
+                    }
+                });
+            });
+        }
+
+        addShortcutSubmitBtn.addEventListener('click', () => {
+            const name = addShortcutName.value.trim();
+            let url = addShortcutUrl.value.trim();
+            if (!name || !url) {
+                alert(currentLang==='vi'?'Vui lòng nhập đầy đủ thông tin!':'Please enter all fields!');
+                return;
+            }
+            if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+            customBookmarks.push({ name: name, url: url, icon: '🔗' });
+            localStorage.setItem('bellgu_bookmarks', JSON.stringify(customBookmarks));
+            
+            addShortcutName.value = '';
+            addShortcutUrl.value = '';
+            renderManageList();
+            renderBookmarks();
+        });
+
+        // --- LỊCH SỬ TÌM KIẾM ---
+        function saveHistory(query) {
+            if (isIncognito) return; 
+            query = query.trim();
+            if (!query) return;
+            searchHistory = searchHistory.filter(item => item.toLowerCase() !== query.toLowerCase());
+            searchHistory.unshift(query);
+            if (searchHistory.length > 10) searchHistory.pop();
+            localStorage.setItem('bellgu_history', JSON.stringify(searchHistory));
+        }
+
+        searchForm.addEventListener('submit', () => saveHistory(searchInput.value));
+
+        searchInput.addEventListener('input', function() {
+            const val = this.value.trim().toLowerCase();
+            suggestions.innerHTML = '';
+            if (!val || isIncognito) { 
+                suggestions.style.display = 'none';
+                searchInput.style.borderRadius = '24px';
+                return;
+            }
+            const filtered = searchHistory.filter(item => item.toLowerCase().includes(val));
+            if (filtered.length > 0) {
+                filtered.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.textContent = item;
+                    div.addEventListener('click', function() {
+                        searchInput.value = item;
+                        suggestions.style.display = 'none';
+                        saveHistory(item);
+                        searchForm.submit();
+                    });
+                    suggestions.appendChild(div);
+                });
+                suggestions.style.display = 'block';
+                searchInput.style.borderRadius = '24px 24px 0 0';
+            } else {
+                suggestions.style.display = 'none';
+                searchInput.style.borderRadius = '24px';
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target !== searchInput && e.target !== suggestions) {
+                suggestions.style.display = 'none';
+                searchInput.style.borderRadius = '24px';
+            }
+        });
+
+        function renderHistory() {
+            historyList.innerHTML = '';
+            if (searchHistory.length === 0) {
+                historyList.innerHTML = `<li style="color:var(--text-sub); font-size:13px; list-style:none; padding: 10px 0;">${currentLang === 'vi'?'Trống.':'Empty.'}</li>`;
+                clearHistoryBtn.style.display = 'none';
+                return;
+            }
+            clearHistoryBtn.style.display = 'inline-block';
+            searchHistory.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                li.innerHTML = `
+                    <span class="history-text">🕒 ${item}</span>
+                    <span class="delete-item" data-index="${index}">×</span>
+                `;
+                li.querySelector('.history-text').addEventListener('click', () => {
+                    searchInput.value = item;
+                    saveHistory(item);
+                    searchForm.submit();
+                });
+                li.querySelector('.delete-item').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    searchHistory.splice(index, 1);
+                    localStorage.setItem('bellgu_history', JSON.stringify(searchHistory));
+                    renderHistory();
+                });
+                historyList.appendChild(li);
+            });
+        }
+
+        clearHistoryBtn.addEventListener('click', () => {
+            searchHistory = [];
+            localStorage.removeItem('bellgu_history');
+            renderHistory();
+        });
+
+        // --- KHỞI CHẠY HỆ THỐNG BAN ĐẦU ---
+        applySearchEngine(localStorage.getItem('bellgu_search_engine') || 'google');
+        applyLanguage(currentLang);
+        applyQuickAccessLink();
+        updateTimeAndGreeting();
+    </script>
+</body>
+</html>
